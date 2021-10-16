@@ -113,13 +113,13 @@ void opcontrol() {
 		// Move front forklift with the right bumpers
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
 		{
-			front_right_fork.move(100);
-			front_left_fork.move(100);
+			front_right_fork.move(75);
+			front_left_fork.move(75);
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
 		{
-			front_right_fork.move(-100);
-			front_left_fork.move(-100);
+			front_right_fork.move(-50);
+			front_left_fork.move(-50);
 		}
 		else
 		{
@@ -130,13 +130,13 @@ void opcontrol() {
 		// Move rear forklift with the right bumpers
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1))
 		{
-			back_right_fork.move(100);
-			back_left_fork.move(100);
+			back_right_fork.move(75);
+			back_left_fork.move(75);
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
 		{
-			back_right_fork.move(-100);
-			back_left_fork.move(-100);
+			back_right_fork.move(-50);
+			back_left_fork.move(-50);
 		}
 		else
 		{
