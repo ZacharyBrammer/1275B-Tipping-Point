@@ -58,7 +58,32 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() {
+	std::shared_ptr<ChassisController> chassis =
+		ChassisControllerBuilder()
+			.withMotors({8, -3}, {-2, 9})
+			// Green gearset, 4 in wheel diam, 11.5 in wheel track
+			.withDimensions(AbstractMotor::gearset::green, {{4_in, 7_in}, imev5GreenTPR})
+			//.withGains(
+			//	{0.001, 0, 0.0001},
+			//	{0.001, 0, 0.0001},
+			//	{0.001, 0, 0.0001})
+			.build();
+
+		std::shared_ptr<AsyncPositionController<double, double>> lift =
+			AsyncPosControllerBuilder()
+				.withMotor({-1, 7})
+				//.withGains({0.001, 0, 0.0001})
+				.build();
+
+		lift->setMaxVelocity(23);
+		lift->tarePosition();
+		lift->setTarget(410);
+		lift->waitUntilSettled();
+
+		lift->setTarget(0);
+
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -118,8 +143,8 @@ void opcontrol() {
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
 		{
-			front_right_fork.move(-50);
-			front_left_fork.move(-50);
+			front_right_fork.move(-75);
+			front_left_fork.move(-75);
 		}
 		else
 		{
@@ -135,8 +160,8 @@ void opcontrol() {
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
 		{
-			back_right_fork.move(-50);
-			back_left_fork.move(-50);
+			back_right_fork.move(-100);
+			back_left_fork.move(-100);
 		}
 		else
 		{
