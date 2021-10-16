@@ -75,18 +75,75 @@ void autonomous() {}
  */
 void opcontrol() {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::Motor left_mtr(1);
-	pros::Motor right_mtr(2);
+
+	// Setup motors. All drive motors are standard green cartridges, fork motors use red torque cartridges
+	pros::Motor front_right_fork(1);
+	pros::Motor front_right_drive(2, true);
+	pros::Motor back_right_drive(3, true);
+	pros::Motor back_right_fork(4, true);
+	pros::Motor back_left_fork(6);
+	pros::Motor front_left_fork(7, true);
+	pros::Motor back_left_drive(8);
+	pros::Motor front_left_drive(9);
+	front_right_fork.set_gearing(pros::E_MOTOR_GEARSET_36);
+	back_right_fork.set_gearing(pros::E_MOTOR_GEARSET_36);
+	front_left_fork.set_gearing(pros::E_MOTOR_GEARSET_36);
+	back_left_fork.set_gearing(pros::E_MOTOR_GEARSET_36);
+
+	// Set forklift breaking mode to hold so that the weight of the goals doesn't make the forks drop
+	front_right_fork.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	back_right_fork.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	front_left_fork.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	back_left_fork.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 
 	while (true) {
-		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
-		int left = master.get_analog(ANALOG_LEFT_Y);
-		int right = master.get_analog(ANALOG_RIGHT_Y);
+		// Power is how fast to drive, turn is what angle to drive at
+		int power = master.get_analog(ANALOG_LEFT_Y);
+    int turn = master.get_analog(ANALOG_LEFT_X);
 
-		left_mtr = left;
-		right_mtr = right;
-		pros::delay(20);
+		int left = power + turn;
+		int right = power - turn;
+
+		// Move motors according to joystick input
+		front_left_drive.move(left);
+		back_left_drive.move(left);
+		front_right_drive.move(right);
+		back_right_drive.move(right);
+
+		// Move front forklift with the right bumpers
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
+		{
+			front_right_fork.move(100);
+			front_left_fork.move(100);
+		}
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
+		{
+			front_right_fork.move(-100);
+			front_left_fork.move(-100);
+		}
+		else
+		{
+			front_right_fork.move(0);
+			front_left_fork.move(0);
+		}
+
+		// Move rear forklift with the right bumpers
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1))
+		{
+			back_right_fork.move(100);
+			back_left_fork.move(100);
+		}
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
+		{
+			back_right_fork.move(-100);
+			back_left_fork.move(-100);
+		}
+		else
+		{
+			back_right_fork.move(0);
+			back_left_fork.move(0);
+		}
+
+		pros::delay(2);
 	}
 }
