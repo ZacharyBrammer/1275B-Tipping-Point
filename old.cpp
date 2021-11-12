@@ -58,7 +58,32 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() {
+	std::shared_ptr<ChassisController> chassis =
+		ChassisControllerBuilder()
+			.withMotors({8, -3}, {-2, 9})
+			// Green gearset, 4 in wheel diam, 11.5 in wheel track
+			.withDimensions(AbstractMotor::gearset::green, {{4_in, 7_in}, imev5GreenTPR})
+			//.withGains(
+			//	{0.001, 0, 0.0001},
+			//	{0.001, 0, 0.0001},
+			//	{0.001, 0, 0.0001})
+			.build();
+
+		std::shared_ptr<AsyncPositionController<double, double>> lift =
+			AsyncPosControllerBuilder()
+				.withMotor({-1, 7})
+				//.withGains({0.001, 0, 0.0001})
+				.build();
+
+		lift->setMaxVelocity(23);
+		lift->tarePosition();
+		lift->setTarget(410);
+		lift->waitUntilSettled();
+
+		lift->setTarget(0);
+
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -77,21 +102,24 @@ void opcontrol() {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
 
 	// Setup motors. All drive motors are standard green cartridges, fork motors use red torque cartridges
-	pros::Motor front_left_drive(1);
-	pros::Motor back_left_drive(2);
-	pros::Motor front_lift(3, true);
-	pros::Motor back_forklift(4);
-	pros::Motor claw(7, true);
-	pros::Motor back_right_drive(8, true);
-	pros::Motor front_right_drive(9, true);
-	back_forklift.set_gearing(pros::E_MOTOR_GEARSET_36);
-	front_lift.set_gearing(pros::E_MOTOR_GEARSET_36);
-	claw.set_gearing(pros::E_MOTOR_GEARSET_36);
+	pros::Motor front_right_fork(1);
+	pros::Motor front_right_drive(2, true);
+	pros::Motor back_right_drive(3, true);
+	pros::Motor back_right_fork(4, true);
+	pros::Motor back_left_fork(6);
+	pros::Motor front_left_fork(7, true);
+	pros::Motor back_left_drive(8);
+	pros::Motor front_left_drive(9);
+	front_right_fork.set_gearing(pros::E_MOTOR_GEARSET_36);
+	back_right_fork.set_gearing(pros::E_MOTOR_GEARSET_36);
+	front_left_fork.set_gearing(pros::E_MOTOR_GEARSET_36);
+	back_left_fork.set_gearing(pros::E_MOTOR_GEARSET_36);
 
 	// Set forklift breaking mode to hold so that the weight of the goals doesn't make the forks drop
-	back_forklift.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	front_lift.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	front_right_fork.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	back_right_fork.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	front_left_fork.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	back_left_fork.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 
 	while (true) {
 		// Power is how fast to drive, turn is what angle to drive at
@@ -107,46 +135,38 @@ void opcontrol() {
 		front_right_drive.move(right);
 		back_right_drive.move(right);
 
-		// Move front lift with the right bumpers
+		// Move front forklift with the right bumpers
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
 		{
-			front_lift.move(100);
+			front_right_fork.move(75);
+			front_left_fork.move(75);
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
 		{
-			front_lift.move(-100);
+			front_right_fork.move(-75);
+			front_left_fork.move(-75);
 		}
 		else
 		{
-			front_lift.move(0);
+			front_right_fork.move(0);
+			front_left_fork.move(0);
 		}
 
-		// Move rear forklift with the left bumpers
+		// Move rear forklift with the right bumpers
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1))
 		{
-			back_forklift.move(75);
+			back_right_fork.move(75);
+			back_left_fork.move(75);
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
 		{
-			back_forklift.move(-75);
+			back_right_fork.move(-100);
+			back_left_fork.move(-100);
 		}
 		else
 		{
-			back_forklift.move(0);
-		}
-
-		// Move claw with A and Y
-		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_Y))
-		{
-			claw.move(50);
-		}
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_A))
-		{
-			claw.move(-50);
-		}
-		else
-		{
-			claw.move(0);
+			back_right_fork.move(0);
+			back_left_fork.move(0);
 		}
 
 		pros::delay(2);
