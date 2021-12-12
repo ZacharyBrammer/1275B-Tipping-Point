@@ -58,7 +58,49 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() {
+	std::shared_ptr<ChassisController> chassis =
+		ChassisControllerBuilder()
+			.withMotors({2, 1}, {8, 9})
+			// Green gearset, 4 in wheel diam, 11.5 in wheel track
+			.withDimensions(AbstractMotor::gearset::green, {{4_in, 7_in}, imev5GreenTPR})
+			//.withGains(
+			//	{0.001, 0, 0.0001},
+			//	{0.001, 0, 0.0001},
+			//	{0.001, 0, 0.0001})
+			.build();
+
+		std::shared_ptr<AsyncPositionController<double, double>> lift =
+			AsyncPosControllerBuilder()
+				.withMotor(3)
+				//.withGains({0.001, 0, 0.0001})
+				.build();
+
+		std::shared_ptr<AsyncPositionController<double, double>> claw =
+			AsyncPosControllerBuilder()
+				.withMotor(-7)
+				//.withGains({0.001, 0, 0.0001})
+				.build();
+
+		claw->setMaxVelocity(100);
+		claw->tarePosition();
+		claw->setTarget(2000);
+		claw->waitUntilSettled();
+
+		claw->setTarget(500);
+		claw->waitUntilSettled();
+
+
+		//chassis->setMaxVelocity(120);
+		//chassis->moveDistance(20_in);
+
+		//claw->setMaxVelocity(100);
+		//claw->tarePosition();
+		//claw->setTarget(2000);
+		//claw->waitUntilSettled();
+
+		//chassis->moveDistance(-12_in);
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -79,7 +121,7 @@ void opcontrol() {
 	// Setup motors. All drive motors are standard green cartridges, fork motors use red torque cartridges
 	pros::Motor front_left_drive(1);
 	pros::Motor back_left_drive(2);
-	pros::Motor front_lift(3, true);
+	pros::Motor front_lift(3);
 	pros::Motor back_forklift(4);
 	pros::Motor claw(7, true);
 	pros::Motor back_right_drive(8, true);
@@ -124,11 +166,11 @@ void opcontrol() {
 		// Move rear forklift with the left bumpers
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1))
 		{
-			back_forklift.move(75);
+			back_forklift.move(125);
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
 		{
-			back_forklift.move(-75);
+			back_forklift.move(-125);
 		}
 		else
 		{
@@ -138,11 +180,11 @@ void opcontrol() {
 		// Move claw with A and Y
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_Y))
 		{
-			claw.move(50);
+			claw.move(75);
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_A))
 		{
-			claw.move(-50);
+			claw.move(-75);
 		}
 		else
 		{
