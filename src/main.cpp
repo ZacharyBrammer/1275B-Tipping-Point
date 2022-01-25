@@ -61,7 +61,7 @@ void competition_initialize() {}
 void autonomous() {
 	std::shared_ptr<ChassisController> chassis =
 		ChassisControllerBuilder()
-			.withMotors({2, 1}, {8, 9})
+			.withMotors({1, 2}, {-9, -8})
 			// Green gearset, 4 in wheel diam, 11.5 in wheel track
 			.withDimensions(AbstractMotor::gearset::green, {{4_in, 7_in}, imev5GreenTPR})
 			//.withGains(
@@ -70,36 +70,45 @@ void autonomous() {
 			//	{0.001, 0, 0.0001})
 			.build();
 
+	std::shared_ptr<AsyncMotionProfileController> profileController =
+	  AsyncMotionProfileControllerBuilder()
+	    .withLimits({
+	      1.0, // Maximum linear velocity of the Chassis in m/s
+	      2.0, // Maximum linear acceleration of the Chassis in m/s/s
+	      10.0 // Maximum linear jerk of the Chassis in m/s/s/s
+	    })
+	    .withOutput(chassis)
+	    .buildMotionProfileController();
+
 		std::shared_ptr<AsyncPositionController<double, double>> lift =
 			AsyncPosControllerBuilder()
 				.withMotor(3)
 				//.withGains({0.001, 0, 0.0001})
 				.build();
 
-		std::shared_ptr<AsyncPositionController<double, double>> claw =
-			AsyncPosControllerBuilder()
-				.withMotor(-7)
-				//.withGains({0.001, 0, 0.0001})
-				.build();
+		pros::ADIDigitalOut claw('A');
 
-		claw->setMaxVelocity(100);
-		claw->tarePosition();
-		claw->setTarget(2000);
-		claw->waitUntilSettled();
+		claw.set_value(true);
+		claw.set_value(false);
 
-		claw->setTarget(500);
-		claw->waitUntilSettled();
+		//profileController->generatePath({
+		//  {0_ft, 0_ft, 0_deg},  // Starting position
+		//  {45_in, 0_ft, 0_deg}}, // Position of goal
+		//  "Goal 1" // Profile name
+		//);
 
+		// Set max veolicty and tare positions of the lift and claw
+		//lift->setMaxVelocity(100);
+		//lift->tarePosition();
 
-		//chassis->setMaxVelocity(120);
-		//chassis->moveDistance(20_in);
+		// Raise the lift to not drag on floor
+		//lift->setTarget(350);
 
-		//claw->setMaxVelocity(100);
-		//claw->tarePosition();
-		//claw->setTarget(2000);
-		//claw->waitUntilSettled();
+		//profileController->setTarget("Goal 1");
 
-		//chassis->moveDistance(-12_in);
+		//claw.set_value(true);
+
+		//chassis->moveDistance(-36_in);
 }
 
 /**
@@ -123,17 +132,22 @@ void opcontrol() {
 	pros::Motor back_left_drive(2);
 	pros::Motor front_lift(3);
 	pros::Motor back_forklift(4);
-	pros::Motor claw(7, true);
+	pros::Motor intake(5);
+	//pros::Motor claw(12, true);
 	pros::Motor back_right_drive(8, true);
 	pros::Motor front_right_drive(9, true);
+	pros::ADIDigitalOut claw('A');
 	back_forklift.set_gearing(pros::E_MOTOR_GEARSET_36);
 	front_lift.set_gearing(pros::E_MOTOR_GEARSET_36);
-	claw.set_gearing(pros::E_MOTOR_GEARSET_36);
+	//claw.set_gearing(pros::E_MOTOR_GEARSET_36);
 
 	// Set forklift breaking mode to hold so that the weight of the goals doesn't make the forks drop
-	back_forklift.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	back_forklift.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	front_lift.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	//claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+
+	int intake_velocity = 0;
+	claw.set_value(false);
 
 	while (true) {
 		// Power is how fast to drive, turn is what angle to drive at
@@ -172,6 +186,10 @@ void opcontrol() {
 		{
 			back_forklift.move(-125);
 		}
+		else if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B))
+		{
+			back_forklift.move_absolute(1520, 125); // Move to position for intake
+		}
 		else
 		{
 			back_forklift.move(0);
@@ -180,16 +198,28 @@ void opcontrol() {
 		// Move claw with A and Y
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_Y))
 		{
-			claw.move(75);
+			claw.set_value(true);
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_A))
 		{
-			claw.move(-75);
+			claw.set_value(false);
 		}
-		else
+
+		// Toggle ring intake with X
+		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X))
 		{
-			claw.move(0);
+			if(intake_velocity == 0)
+			{
+				intake_velocity = 200;
+			}
+			else
+			{
+				intake_velocity = 0;
+			}
 		}
+
+		// Move intake according to velocity set above
+		intake.move(intake_velocity);
 
 		pros::delay(2);
 	}
