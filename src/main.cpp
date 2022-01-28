@@ -87,28 +87,37 @@ void autonomous() {
 				.build();
 
 		pros::ADIDigitalOut claw('A');
-
-		claw.set_value(true);
 		claw.set_value(false);
 
-		//profileController->generatePath({
-		//  {0_ft, 0_ft, 0_deg},  // Starting position
-		//  {45_in, 0_ft, 0_deg}}, // Position of goal
-		//  "Goal 1" // Profile name
-		//);
+		// Gets first goal
+		profileController->generatePath({
+		  {0_ft, 0_ft, 0_deg},  // Starting position
+		  {48_in, 0_ft, 0_deg}}, // Position of goal
+		  "Goal 1" // Profile name
+		);
 
-		// Set max veolicty and tare positions of the lift and claw
-		//lift->setMaxVelocity(100);
-		//lift->tarePosition();
+		// Set max veolicty and tare positions of the lift
+		lift->setMaxVelocity(100);
+		lift->tarePosition();
 
 		// Raise the lift to not drag on floor
-		//lift->setTarget(350);
+		lift->setTarget(350);
 
-		//profileController->setTarget("Goal 1");
+		profileController->setTarget("Goal 1");
 
-		//claw.set_value(true);
+		pros::delay(2000);
 
-		//chassis->moveDistance(-36_in);
+		claw.set_value(true);
+
+		chassis->moveDistance(-32_in);
+
+		claw.set_value(false);
+
+		chassis->moveDistance(-3_in);
+
+		chassis->turnAngle(95_deg);
+
+		chassis->moveDistance(20_in);
 }
 
 /**
