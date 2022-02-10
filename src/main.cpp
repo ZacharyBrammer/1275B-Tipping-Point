@@ -82,7 +82,7 @@ void autonomous() {
 
 		std::shared_ptr<AsyncPositionController<double, double>> lift =
 			AsyncPosControllerBuilder()
-				.withMotor(3)
+				.withMotor({3, -17})
 				//.withGains({0.001, 0, 0.0001})
 				.build();
 
@@ -139,20 +139,23 @@ void opcontrol() {
 	// Setup motors. All drive motors are standard green cartridges, fork motors use red torque cartridges
 	pros::Motor front_left_drive(1);
 	pros::Motor back_left_drive(2);
-	pros::Motor front_lift(3);
+	pros::Motor front_lift_r(3);
 	pros::Motor back_forklift(4);
 	pros::Motor intake(5);
 	//pros::Motor claw(12, true);
 	pros::Motor back_right_drive(8, true);
 	pros::Motor front_right_drive(9, true);
+	pros::Motor front_lift_l(17, true);
 	pros::ADIDigitalOut claw('A');
 	back_forklift.set_gearing(pros::E_MOTOR_GEARSET_36);
-	front_lift.set_gearing(pros::E_MOTOR_GEARSET_36);
+	front_lift_r.set_gearing(pros::E_MOTOR_GEARSET_36);
+	front_lift_l.set_gearing(pros::E_MOTOR_GEARSET_36);
 	//claw.set_gearing(pros::E_MOTOR_GEARSET_36);
 
 	// Set forklift breaking mode to hold so that the weight of the goals doesn't make the forks drop
 	back_forklift.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	front_lift.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	front_lift_r.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	front_lift_l.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	//claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 	int intake_velocity = 0;
@@ -175,15 +178,18 @@ void opcontrol() {
 		// Move front lift with the right bumpers
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
 		{
-			front_lift.move(100);
+			front_lift_r.move(100);
+			front_lift_l.move(100);
 		}
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
 		{
-			front_lift.move(-100);
+			front_lift_r.move(-100);
+			front_lift_l.move(-100);
 		}
 		else
 		{
-			front_lift.move(0);
+			front_lift_r.move(0);
+			front_lift_l.move(0);
 		}
 
 		// Move rear forklift with the left bumpers
