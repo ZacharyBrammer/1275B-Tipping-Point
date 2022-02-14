@@ -87,6 +87,7 @@ void autonomous() {
 				.build();
 
 		pros::ADIDigitalOut claw('A');
+		pros::Motor intake(5);
 		claw.set_value(false);
 
 		// Gets first goal
@@ -101,7 +102,7 @@ void autonomous() {
 		lift->tarePosition();
 
 		// Raise the lift to not drag on floor
-		lift->setTarget(350);
+		//lift->setTarget(350);
 
 		profileController->setTarget("Goal 1");
 
@@ -115,9 +116,11 @@ void autonomous() {
 
 		chassis->moveDistance(-3_in);
 
-		chassis->turnAngle(95_deg);
+		chassis->turnAngle(-220_deg);
 
-		chassis->moveDistance(20_in);
+		chassis->moveDistance(-20_in);
+
+		intake.move(1000);
 }
 
 /**
